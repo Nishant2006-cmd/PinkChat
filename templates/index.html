@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinkchat - Home</title>
+    <!-- Moved Bootstrap to the head -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #ffccd5; /* Soft cute pink background */
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+        }
+        
+        .main-container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 15px;
+        }
+
+        .slay-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0px 8px 24px rgba(255, 77, 109, 0.15);
+            padding: 30px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 182, 193, 0.4);
+        }
+
+        .app-title {
+            font-weight: 800;
+            letter-spacing: 2px;
+            background: linear-gradient(45deg, #ff4d6d, #ff758f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-pink {
+            background-color: #ff4d6d;
+            color: white;
+            font-weight: 600;
+            border-radius: 30px;
+            padding: 10px 24px;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn-pink:hover {
+            background-color: #ff758f;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 77, 109, 0.3);
+        }
+
+        .btn-outline-pink {
+            border: 2px solid #ff4d6d;
+            color: #ff4d6d;
+            font-weight: 600;
+            border-radius: 30px;
+            padding: 8px 20px;
+            transition: all 0.3s ease;
+            background: transparent;
+        }
+
+        .btn-outline-pink:hover {
+            background-color: #ff4d6d;
+            color: white;
+        }
+
+        .friend-item {
+            background: #fff5f6;
+            border-radius: 15px;
+            padding: 12px 20px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-left: 5px solid #ff4d6d;
+        }
+
+        .form-control-custom {
+            border-radius: 30px;
+            border: 2px solid #ffe5ec;
+            padding: 10px 20px;
+        }
+
+        .form-control-custom:focus {
+            border-color: #ff4d6d;
+            box-shadow: 0 0 0 0.25rem rgba(255, 77, 109, 0.25);
+        }
+        
+        .badge-status {
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container main-container">
+    
+    <!-- Top Bar Dashboard Header -->
+    <div class="slay-card d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+        <div>
+            <h1 class="app-title display-5 m-0">PINK CHAT</h1>
+            <p class="text-muted m-0 mt-1">
+                Welcome back, 
+                <span class="fw-bold text-dark">
+                    {% if current_user.is_authenticated %}
+                        {{ current_user.username }}
+                    {% else %}
+                        Guest
+                    {% endif %}
+                </span> ✨
+            </p>
+        </div>
+        
+        <!-- Auth Control Row -->
+        <div class="d-flex gap-2">
+            {% if not current_user.is_authenticated %}
+                <a href="/login" class="text-decoration-none">
+                    <button class="btn btn-outline-pink">Login</button>
+                </a>
+                <a href="/signup" class="text-decoration-none">
+                    <button class="btn btn-pink">Sign Up</button>
+                </a>
+            {% else %}
+                <a href="/logout" class="text-decoration-none">
+                    <button class="btn btn-outline-danger px-4 rounded-pill">Logout</button>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Global Chat Section -->
+    <div class="slay-card text-center py-4">
+        <h2 class="h4 fw-bold mb-3 text-secondary-emphasis">🌐 Global Chatroom</h2>
+        <form action="/chat" class="d-flex flex-column flex-sm-row justify-content-center gap-2 max-width-500 mx-auto" style="max-width: 500px;">
+            <input
+                type="text"
+                name="username"
+                class="form-control form-control-custom"
+                placeholder="Enter a flawless nickname..."
+                required
+            >
+            <input
+                type="hidden"
+                name="room"
+                value="global_random_room"
+            >
+            <button type="submit" class="btn btn-pink flex-shrink-0">
+                Start Chatting
+            </button>
+        </form>
+    </div>
+
+    <!-- Authenticated Features Dashboard -->
+    {% if current_user.is_authenticated %}
+        
+        <!-- Add Friend Form Row -->
+        <div class="slay-card">
+            <h2 class="h4 fw-bold mb-3 text-secondary-emphasis">💖 Add to your Inner Circle</h2>
+            <form action="/add_friend" method="POST" class="d-flex gap-2" style="max-width: 500px;">
+                <input
+                    type="text"
+                    name="friend"
+                    class="form-control form-control-custom"
+                    placeholder="Enter friend's username..."
+                    required
+                >
+                <button type="submit" class="btn btn-pink flex-shrink-0">
+                    Add Friend
+                </button>
+            </form>
+        </div>
+
+        <!-- Friends List Section -->
+        <div class="slay-card">
+            <h2 class="h4 fw-bold mb-4 text-secondary-emphasis">👥 Besties List</h2>
+            
+            <div class="p-0">
+                {% if friends %}
+                    {% for friend in friends %}
+                        <div class="friend-item">
+                            
+                            <!-- Friend Identity and Indicators -->
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="friend-name fw-bold text-dark fs-5" data-username="{{ friend.friend }}">
+                                    {{ friend.friend }}
+                                    
+                                    <span class="badge-status ms-1">
+                                        {% if friend.friend in online_users %}🟢{% else %}⚫{% endif %}
+                                    </span>
+                                    
+                                    {% for notification in notifications %}
+                                        {% if notification.sender == friend.friend %}
+                                            <span class="ms-1 animate-pulse">🔴</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </span>
+                            </div>
+
+                            <!-- Actions Row -->
+                            <div class="d-flex gap-2">
+                                <a href="/pm/{{ friend.friend }}" class="text-decoration-none">
+                                    <button class="btn btn-sm btn-pink px-3">PM</button>
+                                </a>
+                                <a href="/delete_friend/{{ friend.friend }}" class="text-decoration-none">
+                                    <button class="btn btn-sm btn-outline-secondary px-3 rounded-pill">Delete</button>
+                                </a>
+                            </div>
+                            
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center my-3">No friends added yet. Go add some besties! ✨</p>
+                {% endif %}
+            </div>
+        </div>
+
+    {% endif %}
+</div>
+
+<!-- Scripts Section (Completely untouched functionality) -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const socket = io();
+
+{% if current_user.is_authenticated %}
+socket.emit('join_personal_room', {
+    username: "{{ current_user.username }}"
+});
+
+socket.on('new_notification', function(data){
+    const friendItems = document.querySelectorAll(".friend-name");
+    friendItems.forEach(function(item){
+        if(item.dataset.username === data.sender){
+            if(!item.innerHTML.includes("🔴")){
+                item.innerHTML += " 🔴";
+            }
+        }
+    });
+});
+
+socket.on('user_online', function(data){
+    const friendItems = document.querySelectorAll(".friend-name");
+    friendItems.forEach(function(item){
+        if(item.dataset.username === data.username){
+            item.innerHTML = item.innerHTML.replace("⚫", "🟢");
+        }
+    });
+});
+
+socket.on('user_offline', function(data){
+    const friendItems = document.querySelectorAll(".friend-name");
+    friendItems.forEach(function(item){
+        if(item.dataset.username === data.username){
+            item.innerHTML = item.innerHTML.replace("🟢", "⚫");
+        }
+    });
+});
+{% endif %}
+</script>
+
+</body>
+</html>
