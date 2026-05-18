@@ -352,5 +352,11 @@ def handle_join_personal_room(data):
 )
 
 
+import os
+
 if __name__ == "__main__":
-    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
+    # 1. Grab the dynamic port Railway provides, fallback to 5000 locally
+    port = int(os.environ.get("PORT", 5000))
+    
+    # 2. Bind to 0.0.0.0 and pass the dynamic port
+    socketio.run(app, host="0.0.0.0", port=port, debug=True, allow_unsafe_werkzeug=True)
