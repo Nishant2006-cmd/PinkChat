@@ -13,8 +13,9 @@ MONGO_URI = os.environ.get("MONGO_URI")
 
 client = MongoClient(MONGO_URI)
 
-client = MongoClient("your_mongodb_uri_here")
-client = MongoClient("mongodb+srv://test:test@chatapp-q7wkc.mongodb.net/test?retryWrites=true&w=majority")
+#client = MongoClient("your_mongodb_uri_here")
+#
+# client = MongoClient("mongodb+srv://test:test@chatapp-q7wkc.mongodb.net/test?retryWrites=true&w=majority")
 
 chat_db = client.get_database("ChatDB")
 users_collection = chat_db.get_collection("users")
