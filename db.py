@@ -4,20 +4,24 @@ from bson.objectid import ObjectId
 from pymongo import MongoClient, DESCENDING
 from werkzeug.security import generate_password_hash
 from user import User
+
 # Configuration
 MESSAGE_FETCH_LIMIT = 20
 
-# Hardcoded MongoDB Atlas URI to bypass Railway environment variable issues
+# Hardcoded MongoDB Atlas URI with your credentials
 MONGO_URI = "mongodb+srv://Nishant:Nishant12345@pinkchat.j68lzim.mongodb.net/ChatDB?retryWrites=true&w=majority&appName=PinkChat"
 client = MongoClient(MONGO_URI)
 
+# DATABASE INITIALIZATION (Ye line miss ho gayi thi, ab sahi kar di!)
+chat_db = client.get_database("ChatDB")
+
+# Collections (Ab ye crash nahi hongi kyuki chat_db upar defined hai)
 users_collection = chat_db.get_collection("users")
 rooms_collection = chat_db.get_collection("rooms")
 room_members_collection = chat_db.get_collection("room_members")
 messages_collection = chat_db.get_collection("messages")
 friends_collection = chat_db.get_collection("friends")
 notifications_collection = chat_db.get_collection("notifications")
-
 
 def save_user(username, email, password):
     password_hash = generate_password_hash(password)
