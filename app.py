@@ -1,11 +1,13 @@
-from flask import Flask, render_template, redirect, request, url_for,request
-from flask_socketio import SocketIO, join_room, leave_room
-from flask_login import LoginManager, login_user,login_required,logout_user,current_user
-from pymongo.errors import DuplicateKeyError
 import eventlet
-eventlet.monkey_patch()
+eventlet.monkey_patch()  # <-- Sabse pehle ye chalega, bina kisi exception ke!
+
 import random
 import os
+from flask import Flask, render_template, redirect, request, url_for
+from flask_socketio import SocketIO, join_room, leave_room
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from pymongo.errors import DuplicateKeyError
+
 from db import (
     get_user,
     save_user,
@@ -16,9 +18,7 @@ from db import (
     save_message,
     get_messages,
     delete_friend,
-    mark_notifications_as_read,
-   
-    
+    mark_notifications_as_read
 )
 import string
 
