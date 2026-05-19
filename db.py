@@ -1,18 +1,16 @@
-from datetime import datetime
-
-from bson import ObjectId
-from pymongo import MongoClient
+import os
+from datetime import datetime  # <-- Added missing import
+from bson.objectid import ObjectId  # <-- Added missing import
 from pymongo import MongoClient, DESCENDING
 from werkzeug.security import generate_password_hash
-
 from user import User
-import os
-from pymongo import MongoClient
 
 # Use the environment variable if available, fallback to localhost for your computer
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
+
 client = MongoClient(MONGO_URI)
 chat_db = client.get_database("ChatDB")
+
 users_collection = chat_db.get_collection("users")
 rooms_collection = chat_db.get_collection("rooms")
 room_members_collection = chat_db.get_collection("room_members")
