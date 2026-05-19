@@ -1,22 +1,50 @@
 import os
+import logging
 from datetime import datetime  # <-- Added missing import
 from bson.objectid import ObjectId  # <-- Added missing import
 from pymongo import MongoClient, DESCENDING
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 from werkzeug.security import generate_password_hash
 from user import User
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Use the environment variable if available, fallback to localhost for your computer
 MONGO_URI = os.environ.get("MONGODB_URI", "mongodb://mongodb.railway.internal:27017/")
 
-client = MongoClient(MONGO_URI)
-chat_db = client.get_database("ChatDB")
+client = None
+chat_db = None
+users_collection = None
+rooms_collection = None
+room_members_collection = None
+messages_collection = None
+friends_collection = None
+notifications_collection = None
+mongo_connected = False
 
-users_collection = chat_db.get_collection("users")
-rooms_collection = chat_db.get_collection("rooms")
-room_members_collection = chat_db.get_collection("room_members")
-messages_collection = chat_db.get_collection("messages")
-friends_collection = chat_db.get_collection("friends")
-notifications_collection = chat_db.get_collection("notifications")
+try:
+    logger.info(f"Connecting to MongoDB at {MONGO_URI} ...")
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    # Force a connection check so we fail fast if MongoDB is unreachable
+    client.admin.command("ping")
+    chat_db = client.get_database("ChatDB")
+    users_collection = chat_db.get_collection("users")
+    rooms_collection = chat_db.get_collection("rooms")
+    room_members_collection = chat_db.get_collection("room_members")
+    messages_collection = chat_db.get_collection("messages")
+    friends_collection = chat_db.get_collection("friends")
+    notifications_collection = chat_db.get_collection("notifications")
+    mongo_connected = True
+    logger.info("Successfully connected to MongoDB.")
+except (ConnectionFailure, ServerSelectionTimeoutError) as e:
+    logger.error(
+        f"Could not connect to MongoDB at {MONGO_URI}: {e}. "
+        "Check that the MONGODB_URI environment variable is set correctly and "
+        "that the MongoDB service is running and reachable."
+    )
+except Exception as e:
+    logger.error(f"Unexpected error while connecting to MongoDB: {e}")
 def save_user(username, email, password):
     password_hash = generate_password_hash(password)
     users_collection.insert_one({'_id': username, 'email': email, 'password': password_hash})

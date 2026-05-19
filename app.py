@@ -1,25 +1,47 @@
-from flask import Flask, render_template, redirect, request, url_for,request
+from flask import Flask, render_template, redirect, request, url_for, request, jsonify
 from flask_socketio import SocketIO, join_room, leave_room
-from flask_login import LoginManager, login_user,login_required,logout_user,current_user
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from pymongo.errors import DuplicateKeyError
 import eventlet
 eventlet.monkey_patch()
 import random
 import os
-from db import (
-    get_user,
-    save_user,
-    add_friend,
-    get_friends,
-    get_notifications,
-    save_notification,
-    save_message,
-    get_messages,
-    delete_friend,
-    mark_notifications_as_read,
-   
-    
-)
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+try:
+    from db import (
+        get_user,
+        save_user,
+        add_friend,
+        get_friends,
+        get_notifications,
+        save_notification,
+        save_message,
+        get_messages,
+        delete_friend,
+        mark_notifications_as_read,
+        mongo_connected,
+        MONGO_URI,
+    )
+except Exception as e:
+    logger.error(f"Failed to import from db.py: {e}")
+    # Define fallback values so the app can still start and serve /health
+    mongo_connected = False
+    MONGO_URI = os.environ.get("MONGODB_URI", "mongodb://mongodb.railway.internal:27017/")
+    def get_user(username): return None
+    def save_user(*a, **kw): raise RuntimeError("MongoDB unavailable")
+    def add_friend(*a, **kw): raise RuntimeError("MongoDB unavailable")
+    def get_friends(*a, **kw): return []
+    def get_notifications(*a, **kw): return []
+    def save_notification(*a, **kw): raise RuntimeError("MongoDB unavailable")
+    def save_message(*a, **kw): raise RuntimeError("MongoDB unavailable")
+    def get_messages(*a, **kw): return []
+    def delete_friend(*a, **kw): raise RuntimeError("MongoDB unavailable")
+    def mark_notifications_as_read(*a, **kw): raise RuntimeError("MongoDB unavailable")
+
 import string
 
 
@@ -36,6 +58,18 @@ login_manager.init_app(app)
 
 
 
+
+
+@app.route("/health")
+def health():
+    status = "ok" if mongo_connected else "degraded"
+    return jsonify({
+        "status": status,
+        "mongodb": {
+            "connected": mongo_connected,
+            "uri": MONGO_URI,
+        },
+    }), 200 if mongo_connected else 503
 
 
 @app.route("/")
