@@ -2,7 +2,10 @@ from flask import Flask, render_template, redirect, request, url_for,request
 from flask_socketio import SocketIO, join_room, leave_room
 from flask_login import LoginManager, login_user,login_required,logout_user,current_user
 from pymongo.errors import DuplicateKeyError
+import eventlet
+eventlet.monkey_patch()
 import random
+import os
 from db import (
     get_user,
     save_user,
@@ -351,7 +354,7 @@ def handle_join_personal_room(data):
 )
 
 
-import os
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
