@@ -4,14 +4,12 @@ from bson.objectid import ObjectId
 from pymongo import MongoClient, DESCENDING
 from werkzeug.security import generate_password_hash
 from user import User
-
-# Configuration global rakhte hain sabse upar
+# Configuration
 MESSAGE_FETCH_LIMIT = 20
 
-# Connection Setup
-MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
+# Hardcoded MongoDB Atlas URI to bypass Railway environment variable issues
+MONGO_URI = "mongodb+srv://Nishant:Nishant12345@pinkchat.j68lzim.mongodb.net/ChatDB?retryWrites=true&w=majority&appName=PinkChat"
 client = MongoClient(MONGO_URI)
-chat_db = client.get_database("ChatDB")
 
 users_collection = chat_db.get_collection("users")
 rooms_collection = chat_db.get_collection("rooms")
