@@ -60,6 +60,43 @@ def index():
         notifications=notifications,
         online_users=online_users
     )
+
+# Globally active users in rooms track karne ke liye
+room_active_users = {}  # Format: {'room_name': ['username1', 'username2']}
+
+@socketio.on('join')
+def on_join(data):
+    username = data['username']
+    room = data['room']
+    join_room(room)
+    
+    if room not in room_active_users:
+        room_active_users[room] = []
+    if username not in room_active_users[room]:
+        room_active_users[room].append(username)
+        
+    # Sabhi users ko nayi list aur count emit karo
+    emit('room_stats', {
+        'count': len(room_active_users[room]),
+        'users': room_active_users[room]
+    }, to=room)
+
+@socketio.on('leave')
+def on_leave(data):
+    username = data['username']
+    room = data['room']
+    leave_room(room)
+    
+    if room in room_active_users and username in room_active_users[room]:
+        room_active_users[room].remove(username)
+        
+    emit('room_stats', {
+        'count': len(room_active_users[room]),
+        'users': room_active_users[room]
+    }, to=room)
+
+
+
 @socketio.on('disconnect')
 def handle_disconnect():
 
