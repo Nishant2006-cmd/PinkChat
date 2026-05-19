@@ -9,14 +9,11 @@ from user import User
 import os
 from pymongo import MongoClient
 
-MONGO_URI = os.environ.get("MONGO_URI")
+# If MONGO_URI exists in the dashboard, it uses it. 
+# If it doesn't (like on your computer), it falls back to your local database!
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
 
 client = MongoClient(MONGO_URI)
-
-#client = MongoClient("your_mongodb_uri_here")
-#
-# client = MongoClient("mongodb+srv://test:test@chatapp-q7wkc.mongodb.net/test?retryWrites=true&w=majority")
-
 chat_db = client.get_database("ChatDB")
 users_collection = chat_db.get_collection("users")
 rooms_collection = chat_db.get_collection("rooms")
