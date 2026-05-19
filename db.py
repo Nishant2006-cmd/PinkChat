@@ -1,13 +1,15 @@
 import os
-from datetime import datetime  # <-- Added missing import
-from bson.objectid import ObjectId  # <-- Added missing import
+from datetime import datetime
+from bson.objectid import ObjectId
 from pymongo import MongoClient, DESCENDING
 from werkzeug.security import generate_password_hash
 from user import User
 
-# Use the environment variable if available, fallback to localhost for your computer
-MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
+# Configuration global rakhte hain sabse upar
+MESSAGE_FETCH_LIMIT = 20
 
+# Connection Setup
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
 client = MongoClient(MONGO_URI)
 chat_db = client.get_database("ChatDB")
 
@@ -17,6 +19,8 @@ room_members_collection = chat_db.get_collection("room_members")
 messages_collection = chat_db.get_collection("messages")
 friends_collection = chat_db.get_collection("friends")
 notifications_collection = chat_db.get_collection("notifications")
+
+
 def save_user(username, email, password):
     password_hash = generate_password_hash(password)
     users_collection.insert_one({'_id': username, 'email': email, 'password': password_hash})
@@ -98,11 +102,24 @@ def save_message(
 
 def get_messages(room_id, page=0):
     offset = page * MESSAGE_FETCH_LIMIT
-    messages = list(
-        messages_collection.find({'room_id': room_id}).sort('_id', DESCENDING).limit(MESSAGE_FETCH_LIMIT).skip(offset))
-    for message in messages:
-        message['created_at'] = message['created_at'].strftime("%d %b, %H:%M")
-    return messages[::-1]
+    # Yahan agar messages khali hain ya cursor me error hai toh check lagate hain
+    try:
+        messages = list(
+            messages_collection.find({'room_id': room_id})
+            .sort('_id', DESCENDING)
+            .limit(MESSAGE_FETCH_LIMIT)
+            .skip(offset)
+        )
+        for message in messages:
+            if 'created_at' in message and message['created_at']:
+                if isinstance(message['created_at'], datetime):
+                    message['created_at'] = message['created_at'].strftime("%d %b, %H:%M")
+            else:
+                message['created_at'] = datetime.now().strftime("%d %b, %H:%M")
+        return messages[::-1]
+    except Exception as e:
+        print(f"Database Error in get_messages: {e}")
+        return []
 def add_friend(user, friend):
 
     friends_collection.insert_one({
