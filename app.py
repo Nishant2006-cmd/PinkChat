@@ -64,27 +64,41 @@ def index():
 # Globally active users in rooms track karne ke liye
 room_active_users = {}  # Format: {'room_name': ['username1', 'username2']}
 
+# 1. 'app = Flask(__name__)' ke just neeche ye line add kar dena agar pehle se nahi hai:
+room_active_users = {}  # Format: {'room_name': ['user1', 'user2']}
+
+# 2. Apne 'join' handler ko aise update karo:
 @socketio.on('join')
-def on_join(data):
-    username = data['username']
-    room = data['room']
-    join_room(room)
+def handle_join(data):
+    username = data.get('username')
+    room = data.get('room')
     
+    if not username or not room:
+        return
+        
+    join_room(room) # User ko room me connect kiya
+    
+    # --- COUNT TRACK KARNE KA LOGIC ---
     if room not in room_active_users:
         room_active_users[room] = []
     if username not in room_active_users[room]:
         room_active_users[room].append(username)
         
-    # Sabhi users ko nayi list aur count emit karo
+    # Frontend ko data wapas bheja (Count aur Users list)
     emit('room_stats', {
         'count': len(room_active_users[room]),
         'users': room_active_users[room]
     }, to=room)
 
+# 3. Apne 'leave' handler ko bhi update kar do taaki koi jaye toh count kam ho:
 @socketio.on('leave')
-def on_leave(data):
-    username = data['username']
-    room = data['room']
+def handle_leave(data):
+    username = data.get('username')
+    room = data.get('room')
+    
+    if not username or not room:
+        return
+        
     leave_room(room)
     
     if room in room_active_users and username in room_active_users[room]:
@@ -94,9 +108,6 @@ def on_leave(data):
         'count': len(room_active_users[room]),
         'users': room_active_users[room]
     }, to=room)
-
-
-
 @socketio.on('disconnect')
 def handle_disconnect():
 
@@ -113,6 +124,49 @@ def handle_disconnect():
         'username': username
     }
 )
+        
+        # app.py ke andar ye naya event add karo
+@socketio.on('add_friend_instant')
+def handle_add_friend_instant(data):
+    current_user = data.get('username')
+    target_user = data.get('target')
+    
+    if not current_user or not target_user:
+        return
+
+    # 1. Database (friends_collection) me check karo ya naya connection banao
+    # Hum ek unique room ID banate hain dono ke liye (jaise: pm_UserA_UserB sorted order me)
+    sorted_users = sorted([current_user, target_user])
+    pm_room_id = f"pm_{sorted_users[0]}_{sorted_users[1]}"
+    
+    # Check karo agar ye dosti pehle se database me hai ya nahi
+    existing_friendship = friends_collection.find_one({
+        'user1': sorted_users[0],
+        'user2': sorted_users[1]
+    })
+    
+    if not existing_friendship:
+        # Permanent dosti insert karo database me
+        friends_collection.insert_one({
+            'user1': sorted_users[0],
+            'user2': sorted_users[1],
+            'room_id': pm_room_id,
+            'timestamp': datetime.utcnow()
+        })
+        
+    # 2. Real-time magic: Dono users ko personal channels par signal bhejo 
+    # taaki dono ke sidebar ya chat list me ye PM room automatic pop-up ho jaye
+    emit('friend_added_success', {
+        'user1': sorted_users[0],
+        'user2': sorted_users[1],
+        'room_id': pm_room_id
+    }, to=current_user)  # Aapko signal mila
+    
+    emit('friend_added_success', {
+        'user1': sorted_users[0],
+        'user2': sorted_users[1],
+        'room_id': pm_room_id
+    }, to=target_user)   # Saamne waale ko automatic signal mila
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():

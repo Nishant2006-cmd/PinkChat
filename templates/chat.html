@@ -365,6 +365,31 @@ function leaveRoom(){
     window.location.href = "/";
 }
 
+
+// 1. Jab koi Active member list me 'Add Friend' dbaega
+function sendFriendRequest(targetUser) {
+    // Backend ko direct dosti ka signal bhejo
+    socket.emit('add_friend_instant', {
+        username: current_user,
+        target: targetUser
+    });
+    
+    // Modal ko turant band kar do
+    toggleMembersModal();
+    alert(targetUser + " ke sath aapka instant PM room open ho raha hai! 💞");
+}
+
+// 2. Backend se jab dosti automatic confirm ho jaye, dono users ke screen par ye trigger hoga
+socket.on('friend_added_success', function(data) {
+    console.log("Instant friendship activated: ", data);
+    
+    // Automatic PM Room ke andar redirect karne ke liye:
+    // Agar dono me se koi bhi active hai, toh use direct us personal room me bhej do!
+    if (current_user === data.user1 || current_user === data.user2) {
+        window.location.href = "/chat/" + data.room_id; 
+    }
+});
+
 // MESSAGES SEND KARNE KA LOGIC
 document.getElementById('message_input_form').onsubmit = function(e){
     e.preventDefault();
