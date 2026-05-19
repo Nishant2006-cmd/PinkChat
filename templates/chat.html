@@ -233,21 +233,6 @@
     border-radius: 20px;
     border: 1px solid #ffb6c1;
 }
-.input-bar-container {
-    position: fixed;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    max-width: 800px;
-    background: #ffffff; /* Solid white background taaki peeche ke messages na dikhein */
-    padding: 10px;
-    box-sizing: border-box;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    z-index: 9999; /* Yeh line lagane se input bar sabse upar aa jayega aur typing shuru ho jayegi! */
-}
     </style>
 </head>
 <body>
@@ -314,110 +299,71 @@
 <script>
 const socket = io();
 
-// Flask se current login user ka naam JavaScript variable mein save kiya
-const current_user = "{{ username }}";
-
 // Auto-scroll logic initialization to view recent messages immediately
 const messagesContainer = document.getElementById('messages');
-if (messagesContainer) {
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
+messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-// BACKEND SE LIVE STATS RECIEVE KARNE KA LOGIC
 socket.on('room_stats', function(data) {
     // Count update karo top bar mein
-    const liveCountEl = document.getElementById('live-count');
-    if (liveCountEl) liveCountEl.innerText = data.count;
+    document.getElementById('live-count').innerText = data.count;
     
     // Modal ke andar users ki list dynamic render karo
     let listUl = document.getElementById('members-list-ul');
-    if (listUl) {
-        listUl.innerHTML = ''; 
-        
-        data.users.forEach(user => {
-            if(user !== current_user) { // Apne aap ko chhod kar baakiyon ke aage add friend button
-                listUl.innerHTML += `
-                    <li style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span>${user}</span>
-                        <button onclick="sendFriendRequest('${user}')" style="background: #ff1493; color: white; border: none; padding: 2px 8px; border-radius: 12px; font-size: 12px; cursor: pointer;">Add Friend</button>
-                    </li>
-                `;
-            } else {
-                listUl.innerHTML += `<li style="margin-bottom: 8px; color: #666;"><span>${user} (You)</span></li>`;
-            }
-        });
-    }
+    listUl.innerHTML = ''; 
+    
+    data.users.forEach(user => {
+        if(user !== current_user) { // Apne aap ko chhod kar baakiyon ke aage add friend button
+            listUl.innerHTML += `
+                <li style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span>${user}</span>
+                    <button onclick="sendFriendRequest('${user}')" style="background: #ff1493; color: white; border: none; padding: 2px 8px; border-radius: 12px; font-size: 12px; cursor: pointer;">Add Friend</button>
+                </li>
+            `;
+        } else {
+            listUl.innerHTML += `<li style="margin-bottom: 8px;"><span>${user} (You)</span></li>`;
+        }
+    });
 });
 
 function toggleMembersModal() {
     let modal = document.getElementById('membersModal');
-    if (modal) {
-        modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
-    }
+    modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
 }
 
-// JAISE HI CONNECT HO, APNA ROOM JOIN KARO
-socket.on('connect', function(){
-    console.log("CONNECTED TO SERVER");
-    
-    // Aapke app.py ke handler (@socketio.on('join')) se match karne ke liye iska naam 'join' rakha hai
-    socket.emit('join', {
-        username: current_user,
-        room: "{{ room }}"
-    });
 
-    socket.emit('join_personal_room', {
-        username: current_user
+socket.emit('join_personal_room', {
+    username: "{{ username }}"
+});
+
+socket.on('connect', function(){
+    console.log("CONNECTED");
+    socket.emit('join_room', {
+        username: "{{ username }}",
+        room: "{{ room }}"
     });
 });
 
 function leaveRoom(){
-    // Aapke app.py ke handler se match karne ke liye iska naam 'leave' rakha hai
-    socket.emit('leave', {
-        username: current_user,
+    socket.emit('leave_room', {
+        username: "{{ username }}",
         room: "{{ room }}"
     });
     window.location.href = "/";
 }
 
-
-// 1. Jab koi Active member list me 'Add Friend' dbaega
-function sendFriendRequest(targetUser) {
-    // Backend ko direct dosti ka signal bhejo
-    socket.emit('add_friend_instant', {
-        username: current_user,
-        target: targetUser
-    });
-    
-    // Modal ko turant band kar do
-    toggleMembersModal();
-    alert(targetUser + " ke sath aapka instant PM room open ho raha hai! 💞");
-}
-
-// 2. Backend se jab dosti automatic confirm ho jaye, dono users ke screen par ye trigger hoga
-socket.on('friend_added_success', function(data) {
-    console.log("Instant friendship activated: ", data);
-    
-    // Automatic PM Room ke andar redirect karne ke liye:
-    // Agar dono me se koi bhi active hai, toh use direct us personal room me bhej do!
-    if (current_user === data.user1 || current_user === data.user2) {
-        window.location.href = "/chat/" + data.room_id; 
-    }
-});
-
-// MESSAGES SEND KARNE KA LOGIC
+// RESTORED JAVASCRIPT LOGIC EXACTLY AS ORIGINAL
 document.getElementById('message_input_form').onsubmit = function(e){
     e.preventDefault();
 
     let message = document.getElementById('message_input').value;
     let imageInput = document.getElementById('image_input');
-    let file = imageInput ? imageInput.files[0] : null;
+    let file = imageInput.files[0];
 
     if(file){
         const reader = new FileReader();
         reader.onload = function(){
             socket.emit('send_message', {
-                username: current_user,
+                username: "{{ username }}",
                 room: "{{ room }}",
                 message: message,
                 image: reader.result,
@@ -427,27 +373,24 @@ document.getElementById('message_input_form').onsubmit = function(e){
         reader.readAsDataURL(file);
     } else {
         socket.emit('send_message', {
-            username: current_user,
+            username: "{{ username }}",
             room: "{{ room }}",
             message: message,
             image: null,
             audio: null
-            });
+        });
     }
 
     document.getElementById('message_input').value = '';
-    if (imageInput) imageInput.value = '';
+    imageInput.value = '';
 };
 
-// MESSAGE RECIEVE KARNE KA LOGIC
 socket.on('receive_message', function(data){
     const messages = document.getElementById('messages');
-    if (!messages) return;
-    
     const newNode = document.createElement('div');
     
-    // Check if message belongs to current active session user
-    const isMe = data.username === current_user;
+    // Check if message belongs to current active session user for chat positioning styling rules
+    const isMe = data.username === "{{ username }}";
     newNode.className = isMe ? "message my-msg" : "message";
 
     let html = `<b>${data.username}:</b><br>`;
@@ -463,7 +406,5 @@ socket.on('receive_message', function(data){
     messages.scrollTop = messages.scrollHeight;
 });
 </script>
-</body>
-</html>
 </body>
 </html>

@@ -67,6 +67,47 @@ room_active_users = {}  # Format: {'room_name': ['username1', 'username2']}
 # 1. 'app = Flask(__name__)' ke just neeche ye line add kar dena agar pehle se nahi hai:
 room_active_users = {}  # Format: {'room_name': ['user1', 'user2']}
 
+# 2. Apne 'join' handler ko aise update karo:
+@socketio.on('join')
+def handle_join(data):
+    username = data.get('username')
+    room = data.get('room')
+    
+    if not username or not room:
+        return
+        
+    join_room(room) # User ko room me connect kiya
+    
+    # --- COUNT TRACK KARNE KA LOGIC ---
+    if room not in room_active_users:
+        room_active_users[room] = []
+    if username not in room_active_users[room]:
+        room_active_users[room].append(username)
+        
+    # Frontend ko data wapas bheja (Count aur Users list)
+    emit('room_stats', {
+        'count': len(room_active_users[room]),
+        'users': room_active_users[room]
+    }, to=room)
+
+# 3. Apne 'leave' handler ko bhi update kar do taaki koi jaye toh count kam ho:
+@socketio.on('leave')
+def handle_leave(data):
+    username = data.get('username')
+    room = data.get('room')
+    
+    if not username or not room:
+        return
+        
+    leave_room(room)
+    
+    if room in room_active_users and username in room_active_users[room]:
+        room_active_users[room].remove(username)
+        
+    emit('room_stats', {
+        'count': len(room_active_users[room]),
+        'users': room_active_users[room]
+    }, to=room)
 @socketio.on('disconnect')
 def handle_disconnect():
 
@@ -83,49 +124,6 @@ def handle_disconnect():
         'username': username
     }
 )
-        
-        # app.py ke andar ye naya event add karo
-@socketio.on('add_friend_instant')
-def handle_add_friend_instant(data):
-    current_user = data.get('username')
-    target_user = data.get('target')
-    
-    if not current_user or not target_user:
-        return
-
-    # 1. Database (friends_collection) me check karo ya naya connection banao
-    # Hum ek unique room ID banate hain dono ke liye (jaise: pm_UserA_UserB sorted order me)
-    sorted_users = sorted([current_user, target_user])
-    pm_room_id = f"pm_{sorted_users[0]}_{sorted_users[1]}"
-    
-    # Check karo agar ye dosti pehle se database me hai ya nahi
-    existing_friendship = friends_collection.find_one({
-        'user1': sorted_users[0],
-        'user2': sorted_users[1]
-    })
-    
-    if not existing_friendship:
-        # Permanent dosti insert karo database me
-        friends_collection.insert_one({
-            'user1': sorted_users[0],
-            'user2': sorted_users[1],
-            'room_id': pm_room_id,
-            'timestamp': datetime.utcnow()
-        })
-        
-    # 2. Real-time magic: Dono users ko personal channels par signal bhejo 
-    # taaki dono ke sidebar ya chat list me ye PM room automatic pop-up ho jaye
-    emit('friend_added_success', {
-        'user1': sorted_users[0],
-        'user2': sorted_users[1],
-        'room_id': pm_room_id
-    }, to=current_user)  # Aapko signal mila
-    
-    emit('friend_added_success', {
-        'user1': sorted_users[0],
-        'user2': sorted_users[1],
-        'room_id': pm_room_id
-    }, to=target_user)   # Saamne waale ko automatic signal mila
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -356,68 +354,31 @@ def handle_send_message_event(data):
             room=f"user_{receiver}"
 
         )
-# Globally active users in rooms track karne ke liye (Ye app = Flask ke niche hona chahiye)
-if 'room_active_users' not in globals():
-    room_active_users = {}
-
-# COMBINED JOIN EVENT (Isi se room connect hoga aur live count tracking bhi hogi)
 @socketio.on('join_room')
 def handle_join_room_event(data):
-    username = data.get('username')
-    room = data.get('room')
-    
-    if not username or not room:
-        return
 
-    join_room(room) # Socket room connect kiya
+    join_room(data['room'])
 
-    # Announcement emit karo (Puraana feature)
     socketio.emit(
         'join_room_announcement',
         data,
-        room=room,
+        room=data['room'],
         include_self=False
     )
 
-    # --- REALTIME LIVE COUNT LOGIC ---
-    if room not in room_active_users:
-        room_active_users[room] = []
-    if username not in room_active_users[room]:
-        room_active_users[room].append(username)
 
-    # Room ke sabhi logon ko stats bhejo
-    socketio.emit('room_stats', {
-        'count': len(room_active_users[room]),
-        'users': room_active_users[room]
-    }, room=room)
-
-
-# COMBINED LEAVE EVENT (Jab banda leave kare)
 @socketio.on('leave_room')
 def handle_leave_room_event(data):
-    username = data.get('username')
-    room = data.get('room')
-    
-    if not username or not room:
-        return
 
-    leave_room(room)
+    leave_room(data['room'])
 
     socketio.emit(
         'leave_room_announcement',
         data,
-        room=room,
+        room=data['room'],
         include_self=False
     )
 
-    # Count list se hatao
-    if room in room_active_users and username in room_active_users[room]:
-        room_active_users[room].remove(username)
-
-    socketio.emit('room_stats', {
-        'count': len(room_active_users[room]),
-        'users': room_active_users[room]
-    }, room=room)
 
 @login_manager.user_loader
 def load_user(username):
