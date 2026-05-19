@@ -299,71 +299,85 @@
 <script>
 const socket = io();
 
+// Flask se current login user ka naam JavaScript variable mein save kiya
+const current_user = "{{ username }}";
+
 // Auto-scroll logic initialization to view recent messages immediately
 const messagesContainer = document.getElementById('messages');
-messagesContainer.scrollTop = messagesContainer.scrollHeight;
+if (messagesContainer) {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
 
+// BACKEND SE LIVE STATS RECIEVE KARNE KA LOGIC
 socket.on('room_stats', function(data) {
     // Count update karo top bar mein
-    document.getElementById('live-count').innerText = data.count;
+    const liveCountEl = document.getElementById('live-count');
+    if (liveCountEl) liveCountEl.innerText = data.count;
     
     // Modal ke andar users ki list dynamic render karo
     let listUl = document.getElementById('members-list-ul');
-    listUl.innerHTML = ''; 
-    
-    data.users.forEach(user => {
-        if(user !== current_user) { // Apne aap ko chhod kar baakiyon ke aage add friend button
-            listUl.innerHTML += `
-                <li style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span>${user}</span>
-                    <button onclick="sendFriendRequest('${user}')" style="background: #ff1493; color: white; border: none; padding: 2px 8px; border-radius: 12px; font-size: 12px; cursor: pointer;">Add Friend</button>
-                </li>
-            `;
-        } else {
-            listUl.innerHTML += `<li style="margin-bottom: 8px;"><span>${user} (You)</span></li>`;
-        }
-    });
+    if (listUl) {
+        listUl.innerHTML = ''; 
+        
+        data.users.forEach(user => {
+            if(user !== current_user) { // Apne aap ko chhod kar baakiyon ke aage add friend button
+                listUl.innerHTML += `
+                    <li style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span>${user}</span>
+                        <button onclick="sendFriendRequest('${user}')" style="background: #ff1493; color: white; border: none; padding: 2px 8px; border-radius: 12px; font-size: 12px; cursor: pointer;">Add Friend</button>
+                    </li>
+                `;
+            } else {
+                listUl.innerHTML += `<li style="margin-bottom: 8px; color: #666;"><span>${user} (You)</span></li>`;
+            }
+        });
+    }
 });
 
 function toggleMembersModal() {
     let modal = document.getElementById('membersModal');
-    modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+    if (modal) {
+        modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+    }
 }
 
-
-socket.emit('join_personal_room', {
-    username: "{{ username }}"
-});
-
+// JAISE HI CONNECT HO, APNA ROOM JOIN KARO
 socket.on('connect', function(){
-    console.log("CONNECTED");
-    socket.emit('join_room', {
-        username: "{{ username }}",
+    console.log("CONNECTED TO SERVER");
+    
+    // Aapke app.py ke handler (@socketio.on('join')) se match karne ke liye iska naam 'join' rakha hai
+    socket.emit('join', {
+        username: current_user,
         room: "{{ room }}"
+    });
+
+    socket.emit('join_personal_room', {
+        username: current_user
     });
 });
 
 function leaveRoom(){
-    socket.emit('leave_room', {
-        username: "{{ username }}",
+    // Aapke app.py ke handler se match karne ke liye iska naam 'leave' rakha hai
+    socket.emit('leave', {
+        username: current_user,
         room: "{{ room }}"
     });
     window.location.href = "/";
 }
 
-// RESTORED JAVASCRIPT LOGIC EXACTLY AS ORIGINAL
+// MESSAGES SEND KARNE KA LOGIC
 document.getElementById('message_input_form').onsubmit = function(e){
     e.preventDefault();
 
     let message = document.getElementById('message_input').value;
     let imageInput = document.getElementById('image_input');
-    let file = imageInput.files[0];
+    let file = imageInput ? imageInput.files[0] : null;
 
     if(file){
         const reader = new FileReader();
         reader.onload = function(){
             socket.emit('send_message', {
-                username: "{{ username }}",
+                username: current_user,
                 room: "{{ room }}",
                 message: message,
                 image: reader.result,
@@ -373,24 +387,27 @@ document.getElementById('message_input_form').onsubmit = function(e){
         reader.readAsDataURL(file);
     } else {
         socket.emit('send_message', {
-            username: "{{ username }}",
+            username: current_user,
             room: "{{ room }}",
             message: message,
             image: null,
             audio: null
-        });
+            });
     }
 
     document.getElementById('message_input').value = '';
-    imageInput.value = '';
+    if (imageInput) imageInput.value = '';
 };
 
+// MESSAGE RECIEVE KARNE KA LOGIC
 socket.on('receive_message', function(data){
     const messages = document.getElementById('messages');
+    if (!messages) return;
+    
     const newNode = document.createElement('div');
     
-    // Check if message belongs to current active session user for chat positioning styling rules
-    const isMe = data.username === "{{ username }}";
+    // Check if message belongs to current active session user
+    const isMe = data.username === current_user;
     newNode.className = isMe ? "message my-msg" : "message";
 
     let html = `<b>${data.username}:</b><br>`;
@@ -406,5 +423,7 @@ socket.on('receive_message', function(data){
     messages.scrollTop = messages.scrollHeight;
 });
 </script>
+</body>
+</html>
 </body>
 </html>
