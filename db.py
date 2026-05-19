@@ -9,7 +9,7 @@ from user import User
 MESSAGE_FETCH_LIMIT = 20
 
 # Hardcoded MongoDB Atlas URI with your credentials
-MONGO_URI = "mongodb+srv://Nishant:Nishant12345@pinkchat.j68lzim.mongodb.net/ChatDB?retryWrites=true&w=majority&appName=PinkChat"
+MONGO_URI = "mongodb+srv://nishant:kuchbhi@pinkchat.j68lzim.mongodb.net/ChatDB?retryWrites=true&w=majority&appName=PinkChat"
 client = MongoClient(MONGO_URI)
 
 # DATABASE INITIALIZATION (Ye line miss ho gayi thi, ab sahi kar di!)
