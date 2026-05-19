@@ -6,7 +6,7 @@ from werkzeug.security import generate_password_hash
 from user import User
 
 # Use the environment variable if available, fallback to localhost for your computer
-MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
+MONGO_URI = os.environ.get("MONGODB_URI", "mongodb://mongodb.railway.internal:27017/")
 
 client = MongoClient(MONGO_URI)
 chat_db = client.get_database("ChatDB")
