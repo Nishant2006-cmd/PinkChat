@@ -268,7 +268,6 @@ def handle_leave_room_event(data):
         }, room="global_random_room")
 
 
-# 4. Disconnect hone par bhi banda list se saaf hona chahiye:
 @socketio.on('disconnect')
 def handle_disconnect():
     username = user_sockets.get(request.sid)
@@ -288,6 +287,31 @@ def handle_disconnect():
         
         socketio.emit('user_offline', {'username': username})
 
+
+# --- INSTANT AUTOMATIC FRIEND ADD & PM REDIRECT ---
+@socketio.on('add_friend_instant')
+def handle_add_friend_instant(data):
+    current_user_name = data.get('username')
+    target_user = data.get('target')
+    
+    if not current_user_name or not target_user:
+        return
+
+    # Dono users ke naam database me link karne ke liye direct function call karo
+    add_friend(current_user_name, target_user)
+    
+    # Realtime signal dono bandon ko bhej do unke personal sockets par
+    socketio.emit('friend_added_success', {
+        'user1': current_user_name,
+        'user2': target_user
+    }, room=f"user_{current_user_name}")
+    
+    socketio.emit('friend_added_success', {
+        'user1': current_user_name,
+        'user2': target_user
+    }, room=f"user_{target_user}")
+
+    
 @socketio.on('join_personal_room')
 def handle_join_personal_room(data):
     username = data['username']
