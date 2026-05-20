@@ -217,7 +217,7 @@ def handle_send_message_event(data):
         )
 
 
-socketio.on('join_room')
+@socketio.on('join_room')
 def handle_join_room_event(data):
     room = data.get('room')
     username = data.get('username')
