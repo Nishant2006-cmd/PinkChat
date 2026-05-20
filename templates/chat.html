@@ -243,11 +243,6 @@
 <div class="room-header" style="display: flex; justify-content: space-between; align-items: center; background: #ff69b4; color: white; padding: 10px 15px; border-radius: 10px 10px 0 0;">
     <h3 style="margin: 0;">💞 Room: {{ room }}</h3>
     
-    {% if room == "global_random_room" %}
-    <button onclick="toggleMembersModal()" style="background: rgba(255,255,255,0.25); border: none; padding: 6px 14px; border-radius: 20px; color: white; cursor: pointer; font-weight: bold; font-size: 13px;">
-        👥 <span id="live-count">1</span> Live
-    </button>
-    {% endif %}
 </div>
 
 <div id="membersModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 12px; box-shadow: 0px 5px 25px rgba(0,0,0,0.3); z-index: 10000; width: 290px; font-family: sans-serif;">
@@ -321,18 +316,39 @@
 <!-- Realtime Scripts Implementation -->
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script>
+// 1. Sabse pehle socket ko initialize karo taaki niche ke listeners sahi chalein
+const socket = io();
 
+// 2. Flask se aaye hue logged-in username ko variable me set karo
+const current_user = "{{ username }}";
 
+// Auto-scroll logic initialization to view recent messages immediately
+const messagesContainer = document.getElementById('messages');
+if (messagesContainer) {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
 
-// Global Room Stats Receiver (Sirf random chat me kaam karega)
+// 3. Socket Connection Lifecycle Events
+socket.on('connect', function(){
+    console.log("CONNECTED TO SERVER SUCCESSFULLY");
+    socket.emit('join_room', {
+        username: current_user,
+        room: "{{ room }}"
+    });
+});
+
+// Join personal notification channel
+socket.emit('join_personal_room', {
+    username: current_user
+});
+
+// 4. Global Room Stats Receiver (Sirf random chat room ke live status ke liye)
 socket.on('global_room_stats', function(data) {
-    // Top Bar me dynamic live count badge update karo
     const liveCountEl = document.getElementById('live-count');
     if (liveCountEl) {
         liveCountEl.innerText = data.count;
     }
     
-    // Popup Modal ke andar active logon ki list bnao
     let listUl = document.getElementById('members-list-ul');
     if (listUl) {
         listUl.innerHTML = ''; 
@@ -351,7 +367,7 @@ socket.on('global_room_stats', function(data) {
     }
 });
 
-// Jo user aaya/gaya uski announcement ko screen par print karne ke liye
+// Jo user aaya/gaya uski announcement updates
 socket.on('join_room_announcement', function(data) {
     const messages = document.getElementById('messages');
     if (messages) {
@@ -380,115 +396,13 @@ socket.on('leave_room_announcement', function(data) {
     }
 });
 
-// Modal Pop-up open/close switch
-function toggleMembersModal() {
-    let modal = document.getElementById('membersModal');
-    if (modal) {
-        modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
-    }
-}
-
-
-
-
-
-
-
-
-const socket = io();
-
-// Auto-scroll logic initialization to view recent messages immediately
-const messagesContainer = document.getElementById('messages');
-messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-socket.on('room_stats', function(data) {
-    // Count update karo top bar mein
-    document.getElementById('live-count').innerText = data.count;
-    
-    // Modal ke andar users ki list dynamic render karo
-    let listUl = document.getElementById('members-list-ul');
-    listUl.innerHTML = ''; 
-    
-    data.users.forEach(user => {
-        if(user !== current_user) { // Apne aap ko chhod kar baakiyon ke aage add friend button
-            listUl.innerHTML += `
-                <li style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span>${user}</span>
-                    <button onclick="sendFriendRequest('${user}')" style="background: #ff1493; color: white; border: none; padding: 2px 8px; border-radius: 12px; font-size: 12px; cursor: pointer;">Add Friend</button>
-                </li>
-            `;
-        } else {
-            listUl.innerHTML += `<li style="margin-bottom: 8px;"><span>${user} (You)</span></li>`;
-        }
-    });
-});
-
-function toggleMembersModal() {
-    let modal = document.getElementById('membersModal');
-    modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
-}
-
-
-socket.emit('join_personal_room', {
-    username: "{{ username }}"
-});
-
-socket.on('connect', function(){
-    console.log("CONNECTED");
-    socket.emit('join_room', {
-        username: "{{ username }}",
-        room: "{{ room }}"
-    });
-});
-
-function leaveRoom(){
-    socket.emit('leave_room', {
-        username: "{{ username }}",
-        room: "{{ room }}"
-    });
-    window.location.href = "/";
-}
-
-// RESTORED JAVASCRIPT LOGIC EXACTLY AS ORIGINAL
-document.getElementById('message_input_form').onsubmit = function(e){
-    e.preventDefault();
-
-    let message = document.getElementById('message_input').value;
-    let imageInput = document.getElementById('image_input');
-    let file = imageInput.files[0];
-
-    if(file){
-        const reader = new FileReader();
-        reader.onload = function(){
-            socket.emit('send_message', {
-                username: "{{ username }}",
-                room: "{{ room }}",
-                message: message,
-                image: reader.result,
-                audio: null
-            });
-        };
-        reader.readAsDataURL(file);
-    } else {
-        socket.emit('send_message', {
-            username: "{{ username }}",
-            room: "{{ room }}",
-            message: message,
-            image: null,
-            audio: null
-        });
-    }
-
-    document.getElementById('message_input').value = '';
-    imageInput.value = '';
-};
-
+// Receive Dynamic Incoming Chat Messages
 socket.on('receive_message', function(data){
     const messages = document.getElementById('messages');
-    const newNode = document.createElement('div');
+    if (!messages) return;
     
-    // Check if message belongs to current active session user for chat positioning styling rules
-    const isMe = data.username === "{{ username }}";
+    const newNode = document.createElement('div');
+    const isMe = data.username === current_user;
     newNode.className = isMe ? "message my-msg" : "message";
 
     let html = `<b>${data.username}:</b><br>`;
@@ -503,6 +417,74 @@ socket.on('receive_message', function(data){
     messages.appendChild(newNode);
     messages.scrollTop = messages.scrollHeight;
 });
+
+// 5. Native DOM Forms submission events (Message Send Handler)
+document.getElementById('message_input_form').onsubmit = function(e){
+    e.preventDefault();
+
+    let messageInput = document.getElementById('message_input');
+    let message = messageInput ? messageInput.value : '';
+    let imageInput = document.getElementById('image_input');
+    let file = imageInput ? imageInput.files[0] : null;
+
+    if(file){
+        const reader = new FileReader();
+        reader.onload = function(){
+            socket.emit('send_message', {
+                username: current_user,
+                room: "{{ room }}",
+                message: message,
+                image: reader.result,
+                audio: null
+            });
+        };
+        reader.readAsDataURL(file);
+    } else {
+        if (message.trim() === "") return; // Khali message block karo
+        socket.emit('send_message', {
+            username: current_user,
+            room: "{{ room }}",
+            message: message,
+            image: null,
+            audio: null
+        });
+    }
+
+    if(messageInput) messageInput.value = '';
+    if(imageInput) imageInput.value = '';
+};
+
+// 6. Custom Interface Controller Operations (Modal and Friend Request Bypass)
+function toggleMembersModal() {
+    let modal = document.getElementById('membersModal');
+    if (modal) {
+        modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+function sendFriendRequest(targetUser) {
+    socket.emit('add_friend_instant', {
+        username: current_user,
+        target: targetUser
+    });
+    toggleMembersModal();
+    alert("Connecting instantly with " + targetUser + "...! 💞");
+}
+
+socket.on('friend_added_success', function(data) {
+    if (current_user === data.user1 || current_user === data.user2) {
+        let friend = (current_user === data.user1) ? data.user2 : data.user1;
+        window.location.href = "/pm/" + friend;
+    }
+});
+
+function leaveRoom(){
+    socket.emit('leave_room', {
+        username: current_user,
+        room: "{{ room }}"
+    });
+    window.location.href = "/";
+}
 </script>
 </body>
 </html>
