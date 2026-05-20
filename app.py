@@ -1,5 +1,3 @@
-import eventlet
-eventlet.monkey_patch()  # <-- Sabse pehle ye chalega, bina kisi exception ke!
 
 import random
 import os
@@ -24,14 +22,21 @@ from db import (
 )
 
 app = Flask(__name__)
+
+# Global room users set initialization
 if 'global_room_users' not in globals():
-    global_room_users = set()  # Set use karenge taaki duplicate usernames na aayein
+    global_room_users = set()
 
 app.config['SECRET_KEY'] = 'secretkey'
-socketio = SocketIO(app, async_mode="eventlet")
+
+# 🌟 CRITICAL FIX: async_mode ko "threading" par set karo
+socketio = SocketIO(app, async_mode="threading", cors_allowed_origins="*")
+
 waiting_user = None
 online_users = set()
 user_sockets = {}
+
+# Login Manager Initialization
 login_manager = LoginManager()
 login_manager.login_view = "login"
 login_manager.init_app(app)
