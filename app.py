@@ -24,6 +24,8 @@ from db import (
 )
 
 app = Flask(__name__)
+if 'global_room_users' not in globals():
+    global_room_users = set()  # Set use karenge taaki duplicate usernames na aayein
 
 app.config['SECRET_KEY'] = 'secretkey'
 socketio = SocketIO(app, async_mode="eventlet")
@@ -215,27 +217,76 @@ def handle_send_message_event(data):
         )
 
 
-@socketio.on('join_room')
+socketio.on('join_room')
 def handle_join_room_event(data):
-    join_room(data['room'])
+    room = data.get('room')
+    username = data.get('username')
+    
+    join_room(room)
+
+    # Announcement logic (Puraana features)
     socketio.emit(
         'join_room_announcement',
         data,
-        room=data['room'],
+        room=room,
         include_self=False
     )
 
+    # --- ONLY TARGET GLOBAL RANDOM ROOM ---
+    if room == "global_random_room" and username:
+        global_room_users.add(username)
+        
+        # Room ke sabhi logon ko realtime stats bhej do
+        socketio.emit('global_room_stats', {
+            'count': len(global_room_users),
+            'users': list(global_room_users)
+        }, room="global_random_room")
 
+
+# 3. Apne 'leave_room' event ko aise change karo:
 @socketio.on('leave_room')
 def handle_leave_room_event(data):
-    leave_room(data['room'])
+    room = data.get('room')
+    username = data.get('username')
+    
+    leave_room(room)
+
     socketio.emit(
         'leave_room_announcement',
         data,
-        room=data['room'],
+        room=room,
         include_self=False
     )
 
+    # --- REMOVE USER ON LEAVE ---
+    if room == "global_random_room" and username:
+        global_room_users.discard(username)
+        
+        socketio.emit('global_room_stats', {
+            'count': len(global_room_users),
+            'users': list(global_room_users)
+        }, room="global_random_room")
+
+
+# 4. Disconnect hone par bhi banda list se saaf hona chahiye:
+@socketio.on('disconnect')
+def handle_disconnect():
+    username = user_sockets.get(request.sid)
+    if username:
+        online_users.discard(username)
+        
+        # Global room se bhi hatao agar wahan tha
+        if username in global_room_users:
+            global_room_users.discard(username)
+            socketio.emit('global_room_stats', {
+                'count': len(global_room_users),
+                'users': list(global_room_users)
+            }, room="global_random_room")
+
+        if request.sid in user_sockets:
+            del user_sockets[request.sid]
+        
+        socketio.emit('user_offline', {'username': username})
 
 @socketio.on('join_personal_room')
 def handle_join_personal_room(data):

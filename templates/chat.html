@@ -236,6 +236,30 @@
     </style>
 </head>
 <body>
+
+
+
+
+<div class="room-header" style="display: flex; justify-content: space-between; align-items: center; background: #ff69b4; color: white; padding: 10px 15px; border-radius: 10px 10px 0 0;">
+    <h3 style="margin: 0;">💞 Room: {{ room }}</h3>
+    
+    {% if room == "global_random_room" %}
+    <button onclick="toggleMembersModal()" style="background: rgba(255,255,255,0.25); border: none; padding: 6px 14px; border-radius: 20px; color: white; cursor: pointer; font-weight: bold; font-size: 13px;">
+        👥 <span id="live-count">1</span> Live
+    </button>
+    {% endif %}
+</div>
+
+<div id="membersModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 12px; box-shadow: 0px 5px 25px rgba(0,0,0,0.3); z-index: 10000; width: 290px; font-family: sans-serif;">
+    <h3 style="margin-top: 0; border-bottom: 2px solid #ffb6c1; padding-bottom: 8px; color: #ff1493;">Active Members</h3>
+    <ul id="members-list-ul" style="list-style: none; padding: 0; max-height: 200px; overflow-y: auto; margin-bottom: 15px;">
+        </ul>
+    <button onclick="toggleMembersModal()" style="background: #ff69b4; color: white; border: none; padding: 8px 10px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer;">Close</button>
+</div>
+
+
+
+
 <div class="room-header" style="display: flex; justify-content: space-between; align-items: center;">
     <h2>💞 Room: <span id="room-name-display">{{ room_name }}</span></h2>
     <button onclick="toggleMembersModal()" style="background: rgba(255,255,255,0.3); border: none; padding: 5px 10px; border-radius: 15px; color: white; cursor: pointer;">
@@ -297,6 +321,80 @@
 <!-- Realtime Scripts Implementation -->
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script>
+
+
+
+// Global Room Stats Receiver (Sirf random chat me kaam karega)
+socket.on('global_room_stats', function(data) {
+    // Top Bar me dynamic live count badge update karo
+    const liveCountEl = document.getElementById('live-count');
+    if (liveCountEl) {
+        liveCountEl.innerText = data.count;
+    }
+    
+    // Popup Modal ke andar active logon ki list bnao
+    let listUl = document.getElementById('members-list-ul');
+    if (listUl) {
+        listUl.innerHTML = ''; 
+        data.users.forEach(user => {
+            if(user !== current_user) {
+                listUl.innerHTML += `
+                    <li style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: #333; border-bottom: 1px solid #ffe4e1; padding-bottom: 5px;">
+                        <strong>${user}</strong>
+                        <button onclick="sendFriendRequest('${user}')" style="background: #ff1493; color: white; border: none; padding: 4px 12px; border-radius: 12px; font-size: 11px; cursor: pointer;">Add Friend</button>
+                    </li>
+                `;
+            } else {
+                listUl.innerHTML += `<li style="margin-bottom: 8px; color: #888; padding-bottom: 5px;"><span>${user} (You)</span></li>`;
+            }
+        });
+    }
+});
+
+// Jo user aaya/gaya uski announcement ko screen par print karne ke liye
+socket.on('join_room_announcement', function(data) {
+    const messages = document.getElementById('messages');
+    if (messages) {
+        const announcementNode = document.createElement('div');
+        announcementNode.className = "message system-msg";
+        announcementNode.style.textAlign = "center";
+        announcementNode.style.color = "#ff69b4";
+        announcementNode.style.fontStyle = "italic";
+        announcementNode.innerHTML = `<b>${data.username}</b> has joined the chat! 👋`;
+        messages.appendChild(announcementNode);
+        messages.scrollTop = messages.scrollHeight;
+    }
+});
+
+socket.on('leave_room_announcement', function(data) {
+    const messages = document.getElementById('messages');
+    if (messages) {
+        const announcementNode = document.createElement('div');
+        announcementNode.className = "message system-msg";
+        announcementNode.style.textAlign = "center";
+        announcementNode.style.color = "#999";
+        announcementNode.style.fontStyle = "italic";
+        announcementNode.innerHTML = `<b>${data.username}</b> has left the chat. 🏃‍♂️`;
+        messages.appendChild(announcementNode);
+        messages.scrollTop = messages.scrollHeight;
+    }
+});
+
+// Modal Pop-up open/close switch
+function toggleMembersModal() {
+    let modal = document.getElementById('membersModal');
+    if (modal) {
+        modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+
+
+
+
+
+
+
 const socket = io();
 
 // Auto-scroll logic initialization to view recent messages immediately
