@@ -31,8 +31,7 @@ app.config['SECRET_KEY'] = 'secretkey'
 
 # 🌟 CRITICAL FIX: async_mode ko "threading" par set karo
 # app.py mein socketio ko aisa set karo:
-socketio = SocketIO(app, async_mode="gevent", cors_allowed_origins="*")
-waiting_user = None
+socketio = SocketIO(app, async_mode="threading", cors_allowed_origins="*")
 online_users = set()
 user_sockets = {}
 
