@@ -1,4 +1,5 @@
-
+from gevent import monkey
+monkey.patch_all()
 import random
 import os
 import string
@@ -30,8 +31,8 @@ if 'global_room_users' not in globals():
 app.config['SECRET_KEY'] = 'secretkey'
 
 # 🌟 CRITICAL FIX: async_mode ko "threading" par set karo
-socketio = SocketIO(app, async_mode="threading", cors_allowed_origins="*")
-
+# app.py mein socketio ko aisa set karo:
+socketio = SocketIO(app, async_mode="gevent", cors_allowed_origins="*")
 waiting_user = None
 online_users = set()
 user_sockets = {}
