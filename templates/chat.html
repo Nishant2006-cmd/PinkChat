@@ -233,6 +233,23 @@
     border-radius: 20px;
     border: 1px solid #ffb6c1;
 }
+
+/* Jab user photo par click karke hold karega, wo badi ho jayegi */
+.messages img {
+    cursor: zoom-in;
+    transition: transform 0.2s ease-in-out;
+}
+
+.messages img:active {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(3); /* Photo ko 3 guna bada kar dega */
+    z-index: 9999;
+    box-shadow: 0 0 30px rgba(0,0,0,0.6);
+    max-width: 90vw;
+    max-height: 90vh;
+}
     </style>
 </head>
 <body>
