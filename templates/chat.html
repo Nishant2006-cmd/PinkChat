@@ -234,25 +234,18 @@
     border: 1px solid #ffb6c1;
 }
 
-/* 🌟 Controlled Pure CSS Zoom */
 .messages img {
     cursor: zoom-in;
-    transition: transform 0.25s ease-in-out;
-    max-width: 180px; /* Chat me photo ka normal size */
+    transition: transform 0.15s ease-in-out; /* Thoda fast aur smooth pop-up */
+    max-width: 180px;
     border-radius: 8px;
+    display: inline-block;
 }
 
-/* Jab user click karke hold karega */
 .messages img:active {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(1.8); /* 3 se ghata kar 1.8 kar diya, ekdum perfect zoom */
-    z-index: 9999;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
-    max-width: 90vw;  /* Screen width se badi nahi hogi */
-    max-height: 80vh; /* Screen height se badi nahi hogi */
-    object-fit: contain; /* Photo stretch ya kategi nahi */
+    transform: scale(1.25); /* Sirf 25% bada hoga, bilkul halka aur safe zoom */
+    z-index: 99; /* Apne aas-paas ke text ke upar dikhega */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); /* Piche halki shadow takki alag se dikhe */
 }
     </style>
 </head>
