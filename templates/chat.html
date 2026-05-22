@@ -234,21 +234,25 @@
     border: 1px solid #ffb6c1;
 }
 
-/* Jab user photo par click karke hold karega, wo badi ho jayegi */
+/* 🌟 Controlled Pure CSS Zoom */
 .messages img {
     cursor: zoom-in;
-    transition: transform 0.2s ease-in-out;
+    transition: transform 0.25s ease-in-out;
+    max-width: 180px; /* Chat me photo ka normal size */
+    border-radius: 8px;
 }
 
+/* Jab user click karke hold karega */
 .messages img:active {
     position: fixed;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%) scale(3); /* Photo ko 3 guna bada kar dega */
+    transform: translate(-50%, -50%) scale(1.8); /* 3 se ghata kar 1.8 kar diya, ekdum perfect zoom */
     z-index: 9999;
-    box-shadow: 0 0 30px rgba(0,0,0,0.6);
-    max-width: 90vw;
-    max-height: 90vh;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+    max-width: 90vw;  /* Screen width se badi nahi hogi */
+    max-height: 80vh; /* Screen height se badi nahi hogi */
+    object-fit: contain; /* Photo stretch ya kategi nahi */
 }
     </style>
 </head>
