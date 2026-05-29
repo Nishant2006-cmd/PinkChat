@@ -94,6 +94,37 @@
         .badge-status {
             font-size: 1.1rem;
         }
+        .dark-mode {
+    background-color: #121212;
+    color: white;
+}
+
+.dark-mode .chat-container {
+    background: #1e1e1e;
+}
+
+.dark-mode .messages {
+    background: #181818;
+}
+
+.dark-mode .message {
+    background: #2b2b2b;
+    color: white;
+}
+
+.dark-mode .message.my-msg {
+    background: #ff4d6d;
+}
+
+.dark-mode .message-form {
+    background: #1e1e1e;
+}
+
+.dark-mode input {
+    background: #2a2a2a;
+    color: white;
+    border: 1px solid #444;
+}
     </style>
 </head>
 <body>
@@ -114,10 +145,12 @@
                     {% endif %}
                 </span> ✨
             </p>
+            <button id="darkModeBtn">🌙</button>
         </div>
         
         <!-- Auth Control Row -->
         <div class="d-flex gap-2">
+            <button id="darkModeBtn">🌙</button>
             {% if not current_user.is_authenticated %}
                 <a href="/login" class="text-decoration-none">
                     <button class="btn btn-outline-pink">Login</button>
@@ -136,6 +169,7 @@
     <!-- Global Chat Section -->
     <div class="slay-card text-center py-4">
         <h2 class="h4 fw-bold mb-3 text-secondary-emphasis">🌐 Global Chatroom</h2>
+        <h1> Those who with login use ur real name if u wanna add friedns<h1>
         <form action="/chat" class="d-flex flex-column flex-sm-row justify-content-center gap-2 max-width-500 mx-auto" style="max-width: 500px;">
             <input
                 type="text"
@@ -166,7 +200,7 @@
                     type="text"
                     name="friend"
                     class="form-control form-control-custom"
-                    placeholder="Enter friend's username..."
+                    placeholder="Enter friend's username... make sure they add u too"
                     required
                 >
                 <button type="submit" class="btn btn-pink flex-shrink-0">
@@ -215,6 +249,8 @@
                     {% endfor %}
                 {% else %}
                     <p class="text-muted text-center my-3">No friends added yet. Go add some besties! ✨</p>
+                    <p class="text-muted text-center my-3">Make sure they add you too from there side ✨</p>
+
                 {% endif %}
             </div>
         </div>
@@ -227,6 +263,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const socket = io();
+
 
 {% if current_user.is_authenticated %}
 socket.emit('join_personal_room', {
@@ -252,7 +289,22 @@ socket.on('user_online', function(data){
         }
     });
 });
+const darkBtn = document.getElementById("darkModeBtn");
 
+darkBtn.onclick = function(){
+
+    document.body.classList.toggle("dark-mode");
+
+    // Save preference
+    if(document.body.classList.contains("dark-mode")){
+        localStorage.setItem("theme", "dark");
+    } else {
+        localStorage.setItem("theme", "light");
+    }
+};
+if(localStorage.getItem("theme") === "dark"){
+    document.body.classList.add("dark-mode");
+}
 socket.on('user_offline', function(data){
     const friendItems = document.querySelectorAll(".friend-name");
     friendItems.forEach(function(item){
@@ -261,6 +313,7 @@ socket.on('user_offline', function(data){
         }
     });
 });
+
 {% endif %}
 </script>
 
