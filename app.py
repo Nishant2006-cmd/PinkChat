@@ -29,8 +29,6 @@ if 'global_room_users' not in globals():
 
 app.config['SECRET_KEY'] = 'secretkey'
 
-# 🌟 CRITICAL FIX: async_mode ko "threading" par set karo
-# app.py mein socketio ko aisa set karo:
 socketio = SocketIO(app, async_mode="threading", cors_allowed_origins="*")
 online_users = set()
 user_sockets = {}
@@ -177,7 +175,7 @@ def delete_friend_route(friend):
     return redirect(url_for('index'))
 
 
-# --- SOCKET EVENTS SECTION ---
+# socKet
 
 @socketio.on('send_message')
 def handle_send_message_event(data):
@@ -190,7 +188,7 @@ def handle_send_message_event(data):
             data.get('image')
         )
 
-    # SEND MESSAGE TO ROOM
+    # SEND MESSAGE TO ROOm
     socketio.emit(
         'receive_message',
         {
@@ -201,7 +199,7 @@ def handle_send_message_event(data):
         room=data['room']
     )
 
-    # PM NOTIFICATIONS ONLY
+    # Private NOTIFICATIONS ONLY
     if data['room'].startswith("pm_"):
         users = data['room'].replace("pm_", "").split("_")
         receiver = None
@@ -228,7 +226,7 @@ def handle_join_room_event(data):
     
     join_room(room)
 
-    # Announcement logic (Puraana features)
+    # Announcement logic (olddddd features)
     socketio.emit(
         'join_room_announcement',
         data,
@@ -236,7 +234,7 @@ def handle_join_room_event(data):
         include_self=False
     )
 
-    # --- ONLY TARGET GLOBAL RANDOM ROOM ---
+    # ONLY TARGET GLOBAL RANDOM ROOM 
     if room == "global_random_room" and username:
         global_room_users.add(username)
         
@@ -247,7 +245,7 @@ def handle_join_room_event(data):
         }, room="global_random_room")
 
 
-# 3. Apne 'leave_room' event ko aise change karo:
+# 3. tune 'leave_room' event ko  change :
 @socketio.on('leave_room')
 def handle_leave_room_event(data):
     room = data.get('room')
@@ -262,7 +260,7 @@ def handle_leave_room_event(data):
         include_self=False
     )
 
-    # --- REMOVE USER ON LEAVE ---
+    #  REMOVE USER jaye to
     if room == "global_random_room" and username:
         global_room_users.discard(username)
         
@@ -278,7 +276,7 @@ def handle_disconnect():
     if username:
         online_users.discard(username)
         
-        # Global room se bhi hatao agar wahan tha
+        # Global room
         if username in global_room_users:
             global_room_users.discard(username)
             socketio.emit('global_room_stats', {
@@ -291,8 +289,7 @@ def handle_disconnect():
         
         socketio.emit('user_offline', {'username': username})
 
-
-# --- INSTANT AUTOMATIC FRIEND ADD & PM REDIRECT ---
+#  INSTANT AUTOMATIC FRIEND ADD & PM REDIRECT 
 @socketio.on('add_friend_instant')
 def handle_add_friend_instant(data):
     current_user_name = data.get('username')
@@ -301,10 +298,11 @@ def handle_add_friend_instant(data):
     if not current_user_name or not target_user:
         return
 
-    # Dono users ke naam database me link karne ke liye direct function call karo
+    #  Dono tarf se dosti insert karo taaki database verify kar sake
     add_friend(current_user_name, target_user)
+    add_friend(target_user, current_user_name)  # dono side dosti pakki karegi!
     
-    # Realtime signal dono bandon ko bhej do unke personal sockets par
+    # Realtime signal dono bandon ko jayga unke personal sockets par
     socketio.emit('friend_added_success', {
         'user1': current_user_name,
         'user2': target_user
@@ -314,7 +312,6 @@ def handle_add_friend_instant(data):
         'user1': current_user_name,
         'user2': target_user
     }, room=f"user_{target_user}")
-
     
 @socketio.on('join_personal_room')
 def handle_join_personal_room(data):
@@ -335,17 +332,24 @@ def handle_join_personal_room(data):
 def handle_disconnect():
     username = user_sockets.get(request.sid)
     if username:
+        # 1. Online users general list   removed
         online_users.discard(username)
+        
+        if 'global_room_users' in globals() and username in global_room_users:
+            global_room_users.discard(username)
+            
+            #  updated live list realtime 
+            socketio.emit('global_room_stats', {
+                'count': len(global_room_users),
+                'users': list(global_room_users)
+            }, room="global_random_room")
+
+        # 2. Socket dictionary se data clean 
         if request.sid in user_sockets:
             del user_sockets[request.sid]
         
-        socketio.emit(
-            'user_offline',
-            {
-                'username': username
-            }
-        )
-
+        # 3. Offline status notify
+        socketio.emit('user_offline', {'username': username})
 
 @login_manager.user_loader
 def load_user(username):

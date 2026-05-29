@@ -423,8 +423,23 @@ socket.on('receive_message', function(data){
         html += `<img src="${data.image}" width="200"><br>`;
     }
     if(data.message){
+
+    // Detect gif/image URLs automatically
+    if(
+        data.message.includes(".gif") ||
+        data.message.includes(".png") ||
+        data.message.includes(".jpg") ||
+        data.message.includes(".jpeg") ||
+        data.message.includes("giphy.com")
+    ){
+
+        html += `<img src="${data.message}" width="200"><br>`;
+
+    } else {
+
         html += `${data.message}`;
     }
+}
 
     newNode.innerHTML = html;
     messages.appendChild(newNode);
