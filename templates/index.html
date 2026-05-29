@@ -100,7 +100,7 @@
 }
 
 .dark-mode .chat-container {
-    background: #1e1e1e;
+    background: #a28888;
 }
 
 .dark-mode .messages {
@@ -113,17 +113,17 @@
 }
 
 .dark-mode .message.my-msg {
-    background: #ff4d6d;
+    background: #aa848b;
 }
 
 .dark-mode .message-form {
-    background: #1e1e1e;
+    background: #635959;
 }
 
 .dark-mode input {
-    background: #2a2a2a;
+    background: #7a7171;
     color: white;
-    border: 1px solid #444;
+    border: 1px solid #756d6d;
 }
     </style>
 </head>
@@ -145,12 +145,12 @@
                     {% endif %}
                 </span> ✨
             </p>
-            <button id="darkModeBtn">🌙</button>
+            <button id="darkModeBtn">🌙 NIGHT</button>
         </div>
         
         <!-- Auth Control Row -->
         <div class="d-flex gap-2">
-            <button id="darkModeBtn">🌙</button>
+            
             {% if not current_user.is_authenticated %}
                 <a href="/login" class="text-decoration-none">
                     <button class="btn btn-outline-pink">Login</button>
@@ -169,7 +169,7 @@
     <!-- Global Chat Section -->
     <div class="slay-card text-center py-4">
         <h2 class="h4 fw-bold mb-3 text-secondary-emphasis">🌐 Global Chatroom</h2>
-        <h1> Those who with login use ur real name if u wanna add friedns<h1>
+        <h5> Those who with login use ur real name if u wanna add friedns<h5>
         <form action="/chat" class="d-flex flex-column flex-sm-row justify-content-center gap-2 max-width-500 mx-auto" style="max-width: 500px;">
             <input
                 type="text"
