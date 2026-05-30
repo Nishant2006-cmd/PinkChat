@@ -274,8 +274,8 @@
 }
 
 .dark-mode input {
-    background: #7a7171;
-    color: white;
+    background: #312121;
+    color: grey;
     border: 1px solid #756d6d;
 }
     </style>
@@ -488,6 +488,12 @@ document.getElementById('message_input_form').onsubmit = function(e){
     let file = imageInput ? imageInput.files[0] : null;
 
     if(file){
+        
+         if(file.size > 10 * 1024 * 1024){
+        alert("Maximum image size is 10MB");
+        return;
+    }
+
         const reader = new FileReader();
         reader.onload = function(){
             socket.emit('send_message', {

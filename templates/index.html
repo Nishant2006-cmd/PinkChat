@@ -94,7 +94,34 @@
         .badge-status {
             font-size: 1.1rem;
         }
-        .dark-mode {
+  .dark-mode {
+    background-color: #121212 !important;
+}
+
+.dark-mode .slay-card {
+    background: #1e1e1e;
+    color: white;
+}
+
+.dark-mode .friend-item {
+    background: #2b2b2b;
+    color: white;
+}
+
+.dark-mode .form-control-custom {
+    background: #333;
+    color: white;
+    border-color: #555;
+}
+
+.dark-mode .text-muted {
+    color: #ccc !important;
+}
+
+.dark-mode .text-dark {
+    color: white !important;
+}
+  .dark-mode {
     background-color: #121212;
     color: white;
 }
@@ -121,8 +148,8 @@
 }
 
 .dark-mode input {
-    background: #7a7171;
-    color: white;
+    background: #312121;
+    color: grey;
     border: 1px solid #756d6d;
 }
     </style>
@@ -145,12 +172,12 @@
                     {% endif %}
                 </span> ✨
             </p>
-            <button id="darkModeBtn">🌙 NIGHT</button>
+            
         </div>
         
         <!-- Auth Control Row -->
         <div class="d-flex gap-2">
-            
+            <button id="darkModeBtn">🌙 NIGHT</button>
             {% if not current_user.is_authenticated %}
                 <a href="/login" class="text-decoration-none">
                     <button class="btn btn-outline-pink">Login</button>
@@ -169,7 +196,7 @@
     <!-- Global Chat Section -->
     <div class="slay-card text-center py-4">
         <h2 class="h4 fw-bold mb-3 text-secondary-emphasis">🌐 Global Chatroom</h2>
-        <h5> Those who with login use ur real name if u wanna add friedns<h5>
+        <h7> Those who have login use ur username if u wanna add new friends<h7>
         <form action="/chat" class="d-flex flex-column flex-sm-row justify-content-center gap-2 max-width-500 mx-auto" style="max-width: 500px;">
             <input
                 type="text"
@@ -289,22 +316,7 @@ socket.on('user_online', function(data){
         }
     });
 });
-const darkBtn = document.getElementById("darkModeBtn");
 
-darkBtn.onclick = function(){
-
-    document.body.classList.toggle("dark-mode");
-
-    // Save preference
-    if(document.body.classList.contains("dark-mode")){
-        localStorage.setItem("theme", "dark");
-    } else {
-        localStorage.setItem("theme", "light");
-    }
-};
-if(localStorage.getItem("theme") === "dark"){
-    document.body.classList.add("dark-mode");
-}
 socket.on('user_offline', function(data){
     const friendItems = document.querySelectorAll(".friend-name");
     friendItems.forEach(function(item){
@@ -313,7 +325,21 @@ socket.on('user_offline', function(data){
         }
     });
 });
+const darkBtn = document.getElementById("darkModeBtn");
 
+darkBtn.addEventListener("click", function() {
+    document.body.classList.toggle("dark-mode");
+
+    if(document.body.classList.contains("dark-mode")){
+        localStorage.setItem("theme", "dark");
+    } else {
+        localStorage.setItem("theme", "light");
+    }
+});
+
+if(localStorage.getItem("theme") === "dark"){
+    document.body.classList.add("dark-mode");
+}
 {% endif %}
 </script>
 
