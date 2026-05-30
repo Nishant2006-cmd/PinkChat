@@ -94,39 +94,7 @@
         .badge-status {
             font-size: 1.1rem;
         }
-  .dark-mode {
-    background-color: #121212 !important;
-}
-
-.dark-mode .slay-card {
-    background: #1e1e1e;
-    color: white;
-}
-
-.dark-mode .friend-item {
-    background: #2b2b2b;
-    color: white;
-}
-
-.dark-mode .form-control-custom {
-    background: #333;
-    color: white;
-    border-color: #555;
-}
-
-.dark-mode .text-muted {
-    color: #ccc !important;
-}
-
-.dark-mode .text-dark {
-    color: white !important;
-}
-  .dark-mode {
-    background-color: #121212;
-    color: white;
-}
-
-.dark-mode .chat-container {
+  .dark-mode .chat-container {
     background: #a28888;
 }
 
@@ -146,11 +114,37 @@
 .dark-mode .message-form {
     background: #635959;
 }
+.dark-mode {
+    background-color: #121212 !important;
+    color: white;
+}
 
-.dark-mode input {
-    background: #312121;
-    color: grey;
-    border: 1px solid #756d6d;
+.dark-mode .slay-card {
+    background: #1e1e1e;
+    color: white;
+}
+
+.dark-mode .friend-item {
+    background: #2b2b2b;
+    color: white;
+}
+
+.dark-mode .form-control-custom {
+    background: #333;
+    color: white;
+    border-color: #555;
+}
+
+.dark-mode .form-control-custom::placeholder {
+    color: #bbb;
+}
+
+.dark-mode .text-muted {
+    color: #ccc !important;
+}
+
+.dark-mode .text-dark {
+    color: white !important;
 }
     </style>
 </head>
@@ -285,20 +279,22 @@
     {% endif %}
 </div>
 
-<!-- Scripts Section (Completely untouched functionality) -->
+
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
 const socket = io();
 
-
 {% if current_user.is_authenticated %}
+
 socket.emit('join_personal_room', {
     username: "{{ current_user.username }}"
 });
 
 socket.on('new_notification', function(data){
     const friendItems = document.querySelectorAll(".friend-name");
+
     friendItems.forEach(function(item){
         if(item.dataset.username === data.sender){
             if(!item.innerHTML.includes("🔴")){
@@ -310,6 +306,7 @@ socket.on('new_notification', function(data){
 
 socket.on('user_online', function(data){
     const friendItems = document.querySelectorAll(".friend-name");
+
     friendItems.forEach(function(item){
         if(item.dataset.username === data.username){
             item.innerHTML = item.innerHTML.replace("⚫", "🟢");
@@ -319,28 +316,34 @@ socket.on('user_online', function(data){
 
 socket.on('user_offline', function(data){
     const friendItems = document.querySelectorAll(".friend-name");
+
     friendItems.forEach(function(item){
         if(item.dataset.username === data.username){
             item.innerHTML = item.innerHTML.replace("🟢", "⚫");
         }
     });
 });
+
+{% endif %}
+
+/* DARK MODE FOR EVERYONE */
+
 const darkBtn = document.getElementById("darkModeBtn");
 
 darkBtn.addEventListener("click", function() {
+
     document.body.classList.toggle("dark-mode");
 
-    if(document.body.classList.contains("dark-mode")){
+    if(document.body.classList.contains("dark-mode")) {
         localStorage.setItem("theme", "dark");
     } else {
         localStorage.setItem("theme", "light");
     }
 });
 
-if(localStorage.getItem("theme") === "dark"){
+if(localStorage.getItem("theme") === "dark") {
     document.body.classList.add("dark-mode");
 }
-{% endif %}
 </script>
 
 </body>
