@@ -455,8 +455,26 @@ socket.on('receive_message', function(data){
     }
     if(data.message){
 
-    // Detect gif/image URLs automatically
-    if(
+    const ytMatch = data.message.match(
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/
+    );
+
+    if(ytMatch){
+
+        const videoId = ytMatch[1];
+
+        html += `
+            <iframe
+                width="250"
+                height="140"
+                src="https://www.youtube.com/embed/${videoId}"
+                frameborder="0"
+                allowfullscreen>
+            </iframe>
+        `;
+
+    }
+    else if(
         data.message.includes(".gif") ||
         data.message.includes(".png") ||
         data.message.includes(".jpg") ||
@@ -466,9 +484,11 @@ socket.on('receive_message', function(data){
 
         html += `<img src="${data.message}" width="200"><br>`;
 
-    } else {
+    }
+    else{
 
         html += `${data.message}`;
+
     }
 }
 
