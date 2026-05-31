@@ -15,9 +15,7 @@
             color: #333;
             height: 100vh;
         }
-        .message img:hover{
-    transform: none !important;
-}
+     
 
         .chat-container {
             max-width: 800px;
@@ -110,13 +108,22 @@
         }
 
         .message img {
-            width: 100%;
-            max-width: 250px;
-            border-radius: 12px;
-            margin-top: 5px;
-            margin-bottom: 5px;
-            display: block;
-        }
+    width: 100%;
+    max-width: 250px;
+    border-radius: 12px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    display: block;
+
+    transition: transform 0.3s ease;
+    cursor: pointer;
+}
+
+.message img:hover {
+    transform: scale(1.8);
+    z-index: 999;
+    position: relative;
+}
 
         /* Form footer matching your original background styling rules */
         .message-form {
@@ -293,14 +300,14 @@
 <body>
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
   <div class="container-fluid">
-    <a class="navbar-brand" href="#">Navbar</a>
+
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav">
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExanVzcTJxMmIxNWQ5OTZ1YWt1YnF1bzV4emV0ZDRveHU2MDFnaGVlayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3PA6SMTjvOumYBVQoA/giphy.gif">Home</a>
+          <a class="nav-link active" aria-current="page" href="/">Home</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="https://giphy.com/">Gifs</a>
@@ -308,10 +315,7 @@
         </li>
         <li class="nav-item">
           <a class="nav-link" href="/signup">Sign up</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link disabled" aria-disabled="true">Disabled</a>
-        </li>
+
       </ul>
     </div>
   </div>
