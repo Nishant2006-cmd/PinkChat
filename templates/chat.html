@@ -398,7 +398,11 @@
 
 <!-- Realtime Scripts Implementation -->
 
-<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+const socket = io();
+console.log("socket loaded");
+</script>
 <script>
 // 1. Sabse pehle socket ko initialize karo taaki niche ke listeners sahi chalein
 const socket = io();
@@ -659,6 +663,21 @@ function leaveRoom(){
     });
     window.location.href = "/";
 }
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const form = document.getElementById("message_input_form");
+
+    console.log("FORM FOUND:", form);
+
+    form.addEventListener("submit", function(e) {
+        e.preventDefault();
+        console.log("SUBMIT BLOCKED");
+        return false;
+    });
+
+});
 </script>
 </body>
 </html>
