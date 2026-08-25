@@ -126,9 +126,7 @@ def chat():
             room=room,
             messages=messages
         )
-    else:
-        return redirect(url_for('index'))
-
+    
 
 @app.route('/pm/<friend_username>')
 @login_required
@@ -179,14 +177,16 @@ def delete_friend_route(friend):
 
 @socketio.on('send_message')
 def handle_send_message_event(data):
-    # SAVE ONLY PM MESSAGES
-    if data['room'].startswith("pm_"):
-        save_message(
-            data['room'],
-            data['message'],
-            data['username'],
-            data.get('image')
-        )
+    print("DEBUG: send_message event received:", data)
+    try:
+        room = data.get('room')
+        message = data.get('message')
+        username = data.get('username')
+        image = data.get('image')
+        print(f"DEBUG: room={room}, user={username}, message={message[:50] if message else None}")
+    except Exception as e:
+        print("ERROR in send_message handler:", e)
+
 
     # SEND MESSAGE TO ROOm
     socketio.emit(
@@ -328,34 +328,18 @@ def handle_join_personal_room(data):
     )
 
 
-@socketio.on('disconnect')
-def handle_disconnect():
-    username = user_sockets.get(request.sid)
-    if username:
-        # 1. Online users general list   removed
-        online_users.discard(username)
-        
-        if 'global_room_users' in globals() and username in global_room_users:
-            global_room_users.discard(username)
-            
-            #  updated live list realtime 
-            socketio.emit('global_room_stats', {
-                'count': len(global_room_users),
-                'users': list(global_room_users)
-            }, room="global_random_room")
-
-        # 2. Socket dictionary se data clean 
-        if request.sid in user_sockets:
-            del user_sockets[request.sid]
-        
-        # 3. Offline status notify
-        socketio.emit('user_offline', {'username': username})
 
 @login_manager.user_loader
 def load_user(username):
     return get_user(username)
 
 
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    socketio.run(app, host="0.0.0.0", port=port)
+    port = int(os.environ.get("PORT", 5001))
+    socketio.run(
+        app,
+        host="0.0.0.0",
+        port=port,
+        debug=False
+    )
