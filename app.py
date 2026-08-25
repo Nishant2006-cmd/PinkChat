@@ -126,6 +126,9 @@ def chat():
             room=room,
             messages=messages
         )
+    else:
+        return "Missing username or room", 400
+
     
 
 @app.route('/pm/<friend_username>')
