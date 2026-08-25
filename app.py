@@ -190,6 +190,19 @@ def handle_send_message_event(data):
     except Exception as e:
         print("ERROR in send_message handler:", e)
 
+import traceback
+
+try:
+    socketio.emit('receive_message', {
+        'username': username,
+        'message': data.get('message'),
+        'image': data.get('image')
+    }, room=room)
+except Exception as e:
+    print("ERROR emitting receive_message:", str(e))
+    # Optional: print a short traceback
+    print("TRACEBACK:", traceback.format_exc(limit=5))
+
 
     # SEND MESSAGE TO ROOm
     socketio.emit(
@@ -199,7 +212,7 @@ def handle_send_message_event(data):
             'message': data['message'],
             'image': data.get('image')
         },
-        room=data['room']
+        room=data.get('room')
     )
 
     # Private NOTIFICATIONS ONLY
@@ -220,6 +233,7 @@ def handle_send_message_event(data):
             },
             room=f"user_{receiver}"
         )
+        
 
 
 @socketio.on('join_room')
