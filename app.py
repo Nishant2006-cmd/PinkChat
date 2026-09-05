@@ -1,4 +1,3 @@
-
 import random
 import os
 import string
@@ -7,6 +6,8 @@ from flask import Flask, render_template, redirect, request, url_for
 from flask_socketio import SocketIO, join_room, leave_room
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from pymongo.errors import DuplicateKeyError
+
+app = Flask(__name__)
 
 from db import (
     get_user,
@@ -21,7 +22,7 @@ from db import (
     mark_notifications_as_read
 )
 
-app = Flask(__name__)
+
 
 # Global room users set initialization
 if 'global_room_users' not in globals():
@@ -29,7 +30,10 @@ if 'global_room_users' not in globals():
 
 app.config['SECRET_KEY'] = 'secretkey'
 
-socketio = SocketIO(app, async_mode="threading", cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*")
+socketio.run(app, host="0.0.0.0", port=8000, debug=True)
+
+
 online_users = set()
 user_sockets = {}
 
@@ -112,24 +116,15 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
-
 @app.route('/chat')
 def chat():
-    username = request.args.get('username')
-    room = request.args.get('room')
+    username = request.args.get('username') or "guest"
+    room = request.args.get('room') or "global_random_room"
 
-    if username and room:
-        messages = get_messages(room)
-        return render_template(
-            'chat.html',
-            username=username,
-            room=room,
-            messages=messages
-        )
-    else:
-        return "Missing username or room", 400
+    # No redirect here — just render directly
+    messages = get_messages(room)
+    return render_template('chat.html', username=username, room=room, messages=messages)
 
-    
 
 @app.route('/pm/<friend_username>')
 @login_required
@@ -145,6 +140,7 @@ def private_chat(friend_username):
             room=room
         )
     )   
+
 
 
 @app.route('/random')
@@ -176,65 +172,95 @@ def delete_friend_route(friend):
     return redirect(url_for('index'))
 
 
-# socKet
+# ================= SOCKET.IO =================
 
 @socketio.on('send_message')
 def handle_send_message_event(data):
     print("DEBUG: send_message event received:", data)
+
     try:
         room = data.get('room')
         message = data.get('message')
         username = data.get('username')
         image = data.get('image')
-        print(f"DEBUG: room={room}, user={username}, message={message[:50] if message else None}")
+
+        print(
+            f"DEBUG: room={room}, "
+            f"user={username}, "
+            f"message={message[:50] if message else None}"
+        )
+
+        # Check required data
+        if not room or not username:
+            print("ERROR: Missing room or username")
+            return
+
+        # Save message to MongoDB
+        save_message(
+            room,
+            message,
+            username,
+            image
+        )
+
+        # Send message to everyone in the room
+        socketio.emit(
+            'receive_message',
+            {
+                'username': username,
+                'message': message,
+                'image': image
+            },
+            room=room
+        )
+
+        # Private message notification
+        if room.startswith("pm_"):
+
+            users = room.replace("pm_", "").split("_")
+
+            receiver = None
+
+            for user in users:
+                if user != username:
+                    receiver = user
+                    break
+
+            if receiver:
+
+                save_notification(
+                    receiver,
+                    username
+                )
+
+                socketio.emit(
+                    'new_notification',
+                    {
+                        'sender': username
+                    },
+                    room=f"user_{receiver}"
+                )
+
     except Exception as e:
-        print("ERROR in send_message handler:", e)
+        print("ERROR in send_message handler:", str(e))
 
-import traceback
-
-try:
-    socketio.emit('receive_message', {
-        'username': username,
-        'message': data.get('message'),
-        'image': data.get('image')
-    }, room=room)
-except Exception as e:
-    print("ERROR emitting receive_message:", str(e))
-    # Optional: print a short traceback
-    print("TRACEBACK:", traceback.format_exc(limit=5))
+        import traceback
+        print(traceback.format_exc())
 
 
-    # SEND MESSAGE TO ROOm
-    socketio.emit(
-        'receive_message',
-        {
-            'username': data['username'],
-            'message': data['message'],
-            'image': data.get('image')
-        },
-        room=data.get('room')
-    )
+    # Global random room
+    if room == "global_random_room" and username:
 
-    # Private NOTIFICATIONS ONLY
-    if data['room'].startswith("pm_"):
-        users = data['room'].replace("pm_", "").split("_")
-        receiver = None
-
-        for user in users:
-            if user != data['username']:
-                receiver = user
-
-        save_notification(receiver, data['username'])
+        global_room_users.add(username)
 
         socketio.emit(
-            'new_notification',
+            'global_room_stats',
             {
-                'sender': data['username']
+                'count': len(global_room_users),
+                'users': list(global_room_users)
             },
-            room=f"user_{receiver}"
+            room="global_random_room"
         )
-        
-
 
 @socketio.on('join_room')
 def handle_join_room_event(data):
@@ -351,12 +377,9 @@ def load_user(username):
     return get_user(username)
 
 
-
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5001))
-    socketio.run(
-        app,
-        host="0.0.0.0",
-        port=port,
-        debug=False
-    )
+    socketio.run(app, host="0.0.0.0", port=8000, debug=True)
+
+
+
+

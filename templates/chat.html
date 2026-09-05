@@ -389,9 +389,7 @@
         accept="image/*"
     >
 
-    <button type="submit">
-        SEND
-    </button>
+    <button id="send" type="submit">SEND</button>
 </form>
 
 </div>
@@ -399,12 +397,16 @@
 <!-- Realtime Scripts Implementation -->
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  const current_user = {{ username|tojson }};
+  const current_room = {{ room|tojson }};
+</script>
 
 <script>
 // 1. Sabse pehle socket ko initialize karo taaki niche ke listeners sahi chalein
-const socket = io("http://10.236.13.190:5000");
+const socket = io("http://localhost:8000");
+
 // 2. Flask se aaye hue logged-in username ko variable me set karo
-const current_user = "{{ username }}";
 
 // Auto-scroll logic initialization to view recent messages immediately
 const messagesContainer = document.getElementById('messages');
@@ -417,7 +419,7 @@ socket.on('connect', function(){
     console.log("CONNECTED TO SERVER SUCCESSFULLY");
     socket.emit('join_room', {
         username: current_user,
-        room: "{{ room }}"
+       room: current_room
     });
 });
 
@@ -557,7 +559,7 @@ document.getElementById('message_input_form').onsubmit = function(e){
         reader.onload = function(){
             socket.emit('send_message', {
                 username: current_user,
-                room: "{{ room }}",
+                room: current_room,
                 message: message,
                 image: reader.result,
                 audio: null
@@ -587,7 +589,7 @@ img.onload = function () {
 
     socket.emit('send_message', {
         username: current_user,
-        room: "{{ room }}",
+        room: current_room,
         message: message,
         image: compressed,
         audio: null
@@ -599,12 +601,17 @@ img.src = URL.createObjectURL(file);
         if (message.trim() === "") return; // Khali message block karo
         socket.emit('send_message', {
             username: current_user,
-            room: "{{ room }}",
+           room: current_room,
             message: message,
             image: null,
             audio: null
         });
     }
+    console.log("SENDING MESSAGE:", {
+    username: current_user,
+    room: current_room,
+    message: message
+});
 
     if(messageInput) messageInput.value = '';
     if(imageInput) imageInput.value = '';
@@ -647,17 +654,43 @@ function sendFriendRequest(targetUser) {
 socket.on('friend_added_success', function(data) {
     if (current_user === data.user1 || current_user === data.user2) {
         let friend = (current_user === data.user1) ? data.user2 : data.user1;
-        window.location.href = "/pm/" + friend;
+       console.log("Redirecting with:", current_user);
+if (current_user && current_room) {
+    window.location.href = `/chat?username=${encodeURIComponent(current_user)}&room=${encodeURIComponent(current_room)}`;
+} else {
+    console.error("Redirect blocked: missing user/room");
+}
+
     }
 });
+function leaveRoom() {
+    if (!current_user || !current_room) {
+        console.error("Leave blocked: missing user/room");
+        return;
+    }
 
-function leaveRoom(){
     socket.emit('leave_room', {
         username: current_user,
-        room: "{{ room }}"
+        room: current_room
     });
-    window.location.href = "/";
+
+    console.log("Leaving room:", current_room);
 }
+
+// Attach the listener once, outside the function
+socket.on('leave_room_announcement', function(data) {
+    if (current_user && current_room) {
+    window.location.href = `/chat?username=${encodeURIComponent(current_user)}&room=${encodeURIComponent(current_room)}`;
+} else {
+    console.error("Redirect blocked: missing user/room");
+}
+
+});
+
+
+
+
+
 </script>
 
 </body>
