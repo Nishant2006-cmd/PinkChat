@@ -31,7 +31,7 @@ if 'global_room_users' not in globals():
 app.config['SECRET_KEY'] = 'secretkey'
 
 socketio = SocketIO(app, cors_allowed_origins="*")
-socketio.run(app, host="0.0.0.0", port=8000, debug=True)
+
 
 
 online_users = set()
